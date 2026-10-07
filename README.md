@@ -2,7 +2,7 @@
 
 Sichao Li, Sai Ma, Daniel Kilov, Secil Yanik Guyot, Zhuang Li, Seth Lazar*
 
-[Website](https://sichao-li.github.io/NoRA-benchmark/) |
+[Website](https://mint-philosophy.github.io/NoRA-benchmark/) |
 [Paper](https://arxiv.org/abs/2606.04806) |
 [Dataset](https://huggingface.co/datasets/MINTLABJHUANU/NoRA) |
 [Model guide](docs/models.md) |
