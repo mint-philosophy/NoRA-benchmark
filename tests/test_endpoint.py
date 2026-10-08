@@ -4,15 +4,17 @@ from threading import Thread
 
 import pytest
 
+from nora import load_prompts
 from nora.models import ChatCompletionsModel, ModelInput
 
 
+@pytest.mark.parametrize("mode", ["direct", "deliberate", "structured"])
 @pytest.mark.parametrize("finish", ["stop", "length"])
 @pytest.mark.parametrize("media,filename,part_type,mime", [
     ("frames", "frame_all_prev.jpg", "image_url", "image/jpeg"),
     ("video", "video_prev.mp4", "video_url", "video/mp4"),
 ])
-def test_compatible_endpoint_roundtrip(tmp_path, monkeypatch, finish, media, filename, part_type, mime):
+def test_compatible_endpoint_roundtrip(tmp_path, monkeypatch, mode, finish, media, filename, part_type, mime):
     received = []
 
     class Handler(BaseHTTPRequestHandler):
@@ -35,8 +37,10 @@ def test_compatible_endpoint_roundtrip(tmp_path, monkeypatch, finish, media, fil
     image = tmp_path / filename
     image.write_bytes(b"test-image")
     model = ChatCompletionsModel(base_url=f"http://127.0.0.1:{server.server_port}/v1", model="custom")
+    prompt = next(row for row in load_prompts() if row["mode"] == mode)
     try:
-        item = ModelInput("x", image, "system", "task", "direct", media)
+        item = ModelInput("x", image, prompt["system_prompt"],
+                          prompt["user_task_template"], prompt["prompt_id"], media)
         if finish == "stop":
             assert model(item) == "Chosen action: wait."
         else:
@@ -48,10 +52,15 @@ def test_compatible_endpoint_roundtrip(tmp_path, monkeypatch, finish, media, fil
         assert body["temperature"] == 0 and body["max_tokens"] == 4096
         assert not {"seed", "top_p", "reasoning_effort"} & body.keys()
         assert model.timeout == 180
+        assert body["messages"][0] == {"role": "system", "content": prompt["system_prompt"]}
+        assert body["messages"][1]["content"][0] == {
+            "type": "text", "text": prompt["user_task_template"]}
         content = body["messages"][1]["content"][1]
         assert content["type"] == part_type
         assert content[part_type]["url"].startswith(f"data:{mime};base64,")
-        assert "labels" not in json.dumps(body)
+        assert set(body) == {"model", "temperature", "max_tokens", "messages"}
+        assert len(body["messages"]) == 2
+        assert len(body["messages"][1]["content"]) == 2
     finally:
         server.shutdown()
         thread.join()

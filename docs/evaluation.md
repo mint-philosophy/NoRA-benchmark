@@ -111,10 +111,9 @@ parameters, native thinking setting, and reconstruction model. The API runner
 defaults to temperature `0` and a `4096`-token output limit; these are runner
 defaults, not a claim that every paper experiment used those settings.
 
-The [bundled prompts](../src/nora/assets/prediction_prompts.json) and the
-[paper prompts distributed with the dataset](https://huggingface.co/datasets/MINTLABJHUANU/NoRA/blob/main/prompts/prediction_prompts.json)
-request different response structures and are not interchangeable for exact
-reproduction. Use the prompt recorded for the experiment you are reproducing.
+The [bundled prompts](../src/nora/assets/prediction_prompts.json) are the original
+paper prompts, also [distributed with the dataset](https://huggingface.co/datasets/MINTLABJHUANU/NoRA/blob/main/prompts/prediction_prompts.json).
+Their IDs are `direct`, `deliberate`, and `structured`.
 For model comparisons, keep prompts, candidate inclusion, reconstruction, and
 scoring settings fixed. `run.json` records the scoring protocol and available
 prediction metadata; it does not recover unreported provider settings.

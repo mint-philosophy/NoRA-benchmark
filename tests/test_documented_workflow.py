@@ -44,6 +44,7 @@ def test_documented_pipeline(tmp_path, monkeypatch, capsys, mode):
     monkeypatch.setattr("nora.cli.reference_path", lambda **kwargs: references)
     monkeypatch.setattr("huggingface_hub.hf_hub_download", lambda *args, **kwargs: str(image))
     prompt = next(prompt for prompt in load_prompts() if prompt["mode"] == mode)
+    assert prompt["prompt_id"] == mode
 
     def make_model(**settings):
         assert settings["model"] == "YOUR_MODEL" and settings["max_tokens"] == 4096

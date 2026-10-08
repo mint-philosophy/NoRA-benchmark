@@ -63,16 +63,17 @@ uv run nora predict \
   --output runs/my-model-structured/raw.jsonl
 ```
 
-The runner supplies the selected prompt automatically. Choose one mode per run:
+The runner supplies the paper's original prompts automatically. Choose one mode per run:
 
 | `--prompt` | What the model is asked to produce |
 | --- | --- |
-| `direct` | One concise next action, without an explanation. |
-| `deliberate` | Several candidate actions with supporting facts and reasons, then a selected action. |
-| `structured` (default) | Facts, tagged reasons citing fact IDs, candidate actions citing reason IDs, and a selected action ID. |
+| `direct` | `Chosen action`: one action ID and description, without an explanation. |
+| `deliberate` | `Action analyses`: 2 to 4 options, each with an analysis and brief action description, followed by `Chosen action`. |
+| `structured` (default) | `Facts`, `Available actions` with tiered reasons, normative foundations and fact references, then `Chosen action`. |
 
-All modes use the camera wearer's first-person perspective. The exact system
-and user prompts are in [prediction_prompts.json](src/nora/assets/prediction_prompts.json).
+All modes reason from the first-person scene. The exact system and user prompts
+are in [prediction_prompts.json](src/nora/assets/prediction_prompts.json).
+Saved predictions identify the prompt as `direct`, `deliberate`, or `structured`.
 
 **API runner settings:** temperature `0`, maximum output `4096` tokens by default,
 one request per clip, and a `180`-second request timeout. No seed or `top_p` is sent.
@@ -159,4 +160,3 @@ citation metadata is in [CITATION.cff](CITATION.cff).
 
 Code is licensed under [MIT](LICENSE). Dataset annotations are
 [CC BY-NC 4.0](LICENSE-DATA). Source images and videos have separate access and usage terms.
-

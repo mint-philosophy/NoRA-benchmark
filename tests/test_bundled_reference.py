@@ -12,7 +12,7 @@ def test_bundled_test_annotations_are_exact_complete_and_offline(monkeypatch):
     monkeypatch.setattr("huggingface_hub.hf_hub_download",
                         lambda *a, **kw: pytest.fail("test references must be bundled"))
     assert digest(reference_path(offline=True)) == (
-        "68f36c07a73fb173b73f6b941aad38ad614f4ebc62c13153c75915fb4d035d9d")
+        "d8ed78b40c38645af5f83634cab8093a1d47699b8f5e6a1e6d39177a25137b68")
     rows = load_references(offline=True)
     assert len(rows) == len({row["clip_id"] for row in rows}) == 190
     assert [sum(len(row[field]) for row in rows) for field in
@@ -22,6 +22,7 @@ def test_bundled_test_annotations_are_exact_complete_and_offline(monkeypatch):
                             "actions", "video_source"}
         assert len(to_instance(row, "annotation").action_graphs) == len(row["actions"])
         assert "actions_observed" not in row
+        assert row["prompt_variant"] == [prompt["prompt_id"] for prompt in load_prompts()]
         assert all(set(action) == {"action_id", "description", "reasons_to_do"}
                    for action in row["actions"])
 
@@ -38,10 +39,27 @@ def test_annotation_format_and_bundled_test_are_defaults(tmp_path):
     assert result["scores"]["soft"]["reasonableness_score"] == pytest.approx(1)
 
 
-def test_prompts_are_bundled_and_versioned():
-    prompts = load_prompts()
-    assert {row["mode"] for row in prompts} == {"direct", "deliberate", "structured"}
-    assert all(row["prompt_id"].startswith("nora_v2_") for row in prompts)
+def test_original_paper_prompts_are_bundled():
+    prompts = {row["mode"]: row for row in load_prompts()}
+    assert {mode: row["prompt_id"] for mode, row in prompts.items()} == {
+        "direct": "direct",
+        "deliberate": "deliberate",
+        "structured": "structured",
+    }
+    assert {mode: row["expected_output_sections"] for mode, row in prompts.items()} == {
+        "direct": ["Chosen action"],
+        "deliberate": ["Action analyses", "Chosen action"],
+        "structured": ["Facts", "Available actions", "Chosen action"],
+    }
+    assert "Do not include facts" in prompts["direct"]["user_task_template"]
+    assert "2 to 4 plausible next actions" in prompts["deliberate"]["system_prompt"]
+    assert "Do not use fact ids" in prompts["deliberate"]["user_task_template"]
+    structured = prompts["structured"]
+    assert "Restart the reason index within each action" in structured["system_prompt"]
+    for field in ("system_prompt", "user_task_template"):
+        assert all(text in structured[field] for text in (
+            "Reasons to do:", "Reasons not to do:", "Tier: A", "Tier: B",
+            "Tier: C", "Foundation:", "Fact refs:"))
 
 
 def test_reconstruction_uses_same_annotation_path(tmp_path):

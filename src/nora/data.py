@@ -8,10 +8,10 @@ import json
 from pathlib import Path
 
 DATASET_ID = "MINTLABJHUANU/NoRA"
-DATASET_REVISION = "463cb2eb2cf1d7d6e81b38c44ca8b9f72416bd61"
+DATASET_REVISION = "7c393be5645e2f9d4bb8b9c13e25e095bfcff77f"
 DATA_HASHES = {
-    "train": "5c0d6988b88907b2f66d54f9b23788adec3566c7cc0f0cf1a1cc2a3e017ecb58",
-    "test": "68f36c07a73fb173b73f6b941aad38ad614f4ebc62c13153c75915fb4d035d9d",
+    "train": "e9af9cb8f203adcf3b2f5b9ccdfc4e4e0194978e4e45b666d10f23fd9485b876",
+    "test": "d8ed78b40c38645af5f83634cab8093a1d47699b8f5e6a1e6d39177a25137b68",
 }
 
 
@@ -90,7 +90,7 @@ def load_references(split="test", *, offline=False):
 
 
 def load_prompts():
-    """Return bundled prompt dictionaries for direct, deliberate, and structured modes."""
+    """Return the paper's original direct, deliberate, and structured prompts."""
     return json.loads((files("nora") / "assets/prediction_prompts.json").read_text())["prompts"]
 
 

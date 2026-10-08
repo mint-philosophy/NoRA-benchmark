@@ -167,10 +167,12 @@ sequential, with one response requested per clip. No seed, `top_p`, or native
 thinking setting is sent. Use a custom callback for other decoding parameters.
 
 Select `--prompt direct`, `deliberate`, or `structured`. The
-[bundled templates](../src/nora/assets/prediction_prompts.json) contain the exact
-system and user messages. `load_prompts()` returns those same dictionaries for
-Python integrations. Direct prompting asks for an action only; the other modes
-request facts and reasons as well. Save separate files for each setting.
+[bundled templates](../src/nora/assets/prediction_prompts.json) contain the paper's
+original system and user messages. `load_prompts()` returns those same
+dictionaries for Python integrations. Direct prompting requests only a chosen
+action; deliberate prompting requests 2 to 4 action analyses and a choice;
+structured prompting requests facts, action-local reasons, and a choice.
+Save separate files for each setting.
 
 For native video input, choose `--media video` and a video-capable model and
 endpoint. The runner sends the local MP4 as a base64 `video_url` content part,
@@ -197,6 +199,12 @@ uv run nora reconstruct --input runs/raw.jsonl --model YOUR_EXTRACTOR_MODEL \
 uv run --extra scorer nora evaluate --predictions runs/annotations.jsonl \
   --output runs/scores
 ```
+
+The structured prompt restarts reason IDs within each action and allows
+`Reasons to do` or `Reasons not to do`. Reconstruction assigns unique IDs,
+preserves candidate actions, and extracts only explicit supporting reasons;
+objections are not converted into support. The scoring schema is therefore
+different from the raw response format.
 
 Reconstruction uses only the model's response, not reference annotations.
 It records the extractor model and prompt in a receipt beside the output.
