@@ -207,16 +207,19 @@ uv run --extra scorer nora evaluate --predictions runs/annotations.jsonl \
 Reconstruction has two steps: an LLM extracts facts and action-local reasons;
 Python builds the public annotation. This keeps repeated local labels such as
 `A1/R1` and `A2/R1` separate and assigns unique reason IDs. Explicit foundations
-are mapped to the public tags, including `coordination / proactivity` to
-`Coordination` and `communication / legibility` to `Communication`. Other
-explicit foundations map to `Other`; missing foundations remain untagged.
+are mapped to public tags by their leading words. The aliases `personal space`,
+`proactivity`, and `legibility` map to `Proxemics`, `Coordination`, and
+`Communication`. Unrecognized foundations map to `Other`; absent foundations
+remain untagged. Optional foundation, tier, and justification fields may be null.
 
-Opposing reasons never become supporting links. All final candidate actions
-remain, even those with only objections or no support, and an explicit chosen
-action must resolve to a retained action. Direct answers do not acquire invented
-facts or reasons. Deliberate answers may express fact-reason links in prose,
-without numbered references. The scoring schema differs from the raw response
-and intermediate extraction formats.
+All extracted reasons, including objections, must have valid text, fact references,
+and optional metadata. After validation, Python removes objections and actions
+with only objections. It omits the chosen-action ID if it names a removed action;
+an ID that never existed still fails validation. Actions with no reasons or with
+both support and objections remain candidates. Objections never become support.
+Direct answers do not acquire invented facts or reasons. Deliberate answers may
+express fact-reason links in prose, without numbered references. The scoring
+schema differs from the raw response and intermediate extraction formats.
 
 Reconstruction uses only the model's response, not reference annotations.
 It records the extractor model and prompt in a receipt beside the output.

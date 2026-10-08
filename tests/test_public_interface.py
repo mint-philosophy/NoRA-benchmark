@@ -71,12 +71,25 @@ def test_model_failure_never_becomes_valid_subset(tmp_path, monkeypatch):
     lambda p: p["actions"][0].update(reasons_to_do=["r"]),
     lambda p: p["facts"].append(p["facts"][0]),
     lambda p: p["reasons"][0].update(tags="Safety"),
+    lambda p: p["reasons"][0].update(tier="D"),
+    lambda p: p["reasons"][0].update(justification=42),
 ])
 def test_bad_source_references_rejected(mutate):
     payload = annotation()
     mutate(payload)
     with pytest.raises(ValueError):
         to_instance(payload, "annotation")
+
+
+@pytest.mark.parametrize("metadata", [
+    {"tier": None, "justification": None},
+    {"tier": "A", "justification": "I have room to pass."},
+])
+def test_optional_reason_metadata_does_not_change_scoring_graph(metadata):
+    payload = annotation()
+    expected = to_instance(payload, "annotation")
+    payload["reasons"][0].update(metadata)
+    assert to_instance(payload, "annotation") == expected
 
 
 def test_annotation_keeps_actions_without_support():

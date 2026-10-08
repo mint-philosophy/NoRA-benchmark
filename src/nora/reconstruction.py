@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import urllib.request
 
-from nora.adapters import to_instance
+from nora.adapters import validate_annotation
 from nora.data import digest, index_rows, read_rows, write_json
 
 INSTRUCTIONS = """Extract the supplied response into action-local reasoning records.
@@ -47,13 +47,21 @@ Otherwise omit chosen_action_id. Do not select one yourself.
 """
 
 
-FOUNDATIONS = {
-    "safety": "Safety", "privacy": "Privacy", "proxemics": "Proxemics",
-    "proxemics (personal space)": "Proxemics", "politeness": "Politeness",
-    "cooperation": "Cooperation", "coordination": "Coordination",
-    "coordination / proactivity": "Coordination", "communication": "Communication",
-    "communication / legibility": "Communication", "other": "Other",
-}
+TAGS = ("Safety", "Privacy", "Proxemics", "Politeness", "Cooperation",
+        "Coordination", "Communication", "Other")
+ALIASES = {"personal space": "Proxemics", "proactivity": "Coordination",
+           "legibility": "Communication"}
+
+
+def _tag(label):
+    """Map an explicit foundation label to a public tag by its leading words."""
+    if not isinstance(label, str) or not label.strip():
+        raise ValueError("invalid_foundation")
+    head = re.split(r"[^a-z ]", " ".join(label.lower().split()), maxsplit=1)[0].strip()
+    for tag in TAGS:
+        if head == tag.lower() or head.startswith(tag.lower() + " "):
+            return tag
+    return ALIASES.get(head, "Other")
 
 
 def _check_fields(value, required, optional=()):
@@ -80,31 +88,30 @@ def _to_annotation(extracted):
                           {"foundation", "tier", "justification"})
             if reason["stance"] not in ("support", "oppose"):
                 raise ValueError("invalid_reason_stance")
-            if reason["stance"] == "oppose":
-                continue
             reason_id = f"R{len(annotation['reasons']) + 1}"
             converted_reason = {"reason_id": reason_id, "text": reason["text"],
-                                "facts": reason["facts"]}
-            if "foundation" in reason:
-                label = reason["foundation"]
-                if not isinstance(label, str) or not label.strip():
-                    raise ValueError("invalid_foundation")
-                label = re.sub(r"\s*/\s*", " / ", " ".join(label.lower().split()))
-                converted_reason["tags"] = [FOUNDATIONS.get(label, "Other")]
-            if "tier" in reason:
-                if reason["tier"] not in ("A", "B", "C"):
-                    raise ValueError("invalid_tier")
-                converted_reason["tier"] = reason["tier"]
-            if "justification" in reason:
-                if not isinstance(reason["justification"], str):
-                    raise ValueError("invalid_justification")
-                converted_reason["justification"] = reason["justification"]
+                                "facts": reason["facts"],
+                                **{key: reason[key] for key in ("tier", "justification")
+                                   if reason.get(key) is not None}}
+            if reason.get("foundation") is not None:
+                converted_reason["tags"] = [_tag(reason["foundation"])]
             annotation["reasons"].append(converted_reason)
-            converted["reasons_to_do"].append({"reason_id": reason_id})
+            if reason["stance"] == "support":
+                converted["reasons_to_do"].append({"reason_id": reason_id})
         annotation["actions"].append(converted)
     if "chosen_action_id" in extracted:
         annotation["chosen_action_id"] = extracted["chosen_action_id"]
-    to_instance(annotation, "annotation")
+    # Validate all extracted content before removing objections from scoring.
+    validate_annotation(annotation)
+    supporting = {ref["reason_id"] for action in annotation["actions"]
+                  for ref in action["reasons_to_do"]}
+    annotation["reasons"] = [r for r in annotation["reasons"] if r["reason_id"] in supporting]
+    objected = {public["action_id"]
+                for public, local in zip(annotation["actions"], extracted["actions"])
+                if local["reasons"] and not public["reasons_to_do"]}
+    annotation["actions"] = [a for a in annotation["actions"] if a["action_id"] not in objected]
+    if annotation.get("chosen_action_id") in objected:
+        del annotation["chosen_action_id"]
     return annotation
 
 
@@ -174,7 +181,8 @@ def reconstruct(source, *, output, model, client=None):
                 stage = "conversion"
                 candidate = _to_annotation(parsed)
                 stage = "validation"
-                to_instance({"clip_id": clip_id, "prediction": candidate}, "annotation")
+                if candidate["clip_id"] != clip_id:
+                    raise ValueError("prediction_clip_id_mismatch")
                 record.update(prediction=candidate, status="ok")
             except Exception as exc:
                 failures += 1

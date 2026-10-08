@@ -94,8 +94,6 @@ def evaluate(predictions, references=None, *, output, prediction_format="annotat
             continue
         row = pred_rows[key]
         try:
-            if row.get("status") == "failed":
-                raise ValueError("generation_failed")
             valid[key] = to_instance(row, prediction_format)
         except (ValueError, TypeError, KeyError, AttributeError) as exc:
             failures.append({"clip_id": key, "stage": "validation",

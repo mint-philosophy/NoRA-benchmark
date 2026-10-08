@@ -23,11 +23,12 @@ available. Missing predicted support therefore does not remove the component
 when the reference contains it. Dataset-level scores are means of per-example
 scores.
 
-Every submitted candidate action is retained, even when its supporting-reason
-list is empty. Annotations contain supporting links only. Direct predictions and
-text reconstruction use the same annotation format and validation. The advanced
-graph format accepts saved action-rooted graphs; comparisons require matching
-formats.
+The scorer retains every candidate in a submitted annotation, even when its
+supporting-reason list is empty. Reconstruction first excludes actions presented
+only through objections; actions with no reasons remain candidates. Annotations
+contain supporting links only. Direct predictions and text reconstruction use
+the same annotation format and validation. The advanced graph format accepts
+saved action-rooted graphs; comparisons require matching formats.
 
 For annotation-format references, the fact pool contains facts linked through
 reasons to actions, not every top-level fact. Reason `text`, action

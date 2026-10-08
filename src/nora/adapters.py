@@ -69,6 +69,10 @@ def validate_annotation(payload):
         tags = reason.get("tags", [])
         if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
             raise ValueError("invalid_tags")
+        if reason.get("tier") is not None and reason["tier"] not in ("A", "B", "C"):
+            raise ValueError("invalid_tier")
+        if reason.get("justification") is not None and not isinstance(reason["justification"], str):
+            raise ValueError("invalid_justification")
     for action in actions.values():
         refs = action.get("reasons_to_do")
         if not isinstance(refs, list):
@@ -123,14 +127,12 @@ def to_instance(row, format):
     payload = row.get("prediction", row)
     if not isinstance(payload, dict):
         raise ValueError("prediction_not_object")
+    if row_id(payload) != clip_id:
+        raise ValueError("prediction_clip_id_mismatch")
     if format == "annotation":
-        if row_id(payload) != clip_id:
-            raise ValueError("prediction_clip_id_mismatch")
         validate_annotation(payload)
         return _annotation_instance(payload)
     if format == "graph":
-        if row_id(payload) != clip_id:
-            raise ValueError("prediction_clip_id_mismatch")
         # Canonical evaluator shape, not the separate reconstruction wire format.
         if "action_graphs" not in payload or not isinstance(payload["action_graphs"], list):
             raise ValueError("missing_action_graphs")

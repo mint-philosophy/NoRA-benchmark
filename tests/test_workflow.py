@@ -148,12 +148,13 @@ def test_valid_subsets_still_succeed(tmp_path, monkeypatch, capsys, include_fail
     assert result["status"] == "partial" and result["coverage"]["valid"] == 1
 
 
-def test_failed_reconstruction_is_separate_and_inspectable(tmp_path):
+@pytest.mark.parametrize("stance", ["support", "oppose"])
+def test_failed_reconstruction_is_separate_and_inspectable(tmp_path, stance):
     raw = save(tmp_path / "raw.jsonl", [{"clip_id": "x", "response": "I wait.", "media": "video"}])
     output = tmp_path / "pred.jsonl"
     candidate = extraction()
     candidate["actions"][0]["reasons"] = [
-        {"text": "I can avoid bumping into them.", "facts": ["missing"], "stance": "support"}]
+        {"text": "I can avoid bumping into them.", "facts": ["missing"], "stance": stance}]
     result = reconstruct(raw, output=output, model="fake", client=lambda *a: json.dumps(candidate))
     record = read_rows(output)[0]
     assert record["status"] == "failed" and "prediction" not in record
