@@ -91,7 +91,9 @@ def load_references(split="test", *, offline=False):
 
 def load_prompts():
     """Return the paper's original direct, deliberate, and structured prompts."""
-    return json.loads((files("nora") / "assets/prediction_prompts.json").read_text())["prompts"]
+    payload = json.loads((files("nora") / "assets/prediction_prompts.json").read_text())
+    return [dict(prompt, input_modality=payload["input_modality"])
+            for prompt in payload["prompts"]]
 
 
 def write_json(path, payload):

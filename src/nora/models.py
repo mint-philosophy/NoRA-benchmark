@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import urlsplit
 import urllib.request
+import warnings
 
 from nora.data import index_rows
 from nora.media import media_path
@@ -36,6 +37,12 @@ def predict(references, model: Callable[[ModelInput], str | dict], *, media_root
     Use a prompt dictionary from load_prompts and local frames or video. Return
     the saved JSONL Path; failed calls are recorded and existing files refused.
     """
+    if media == "video" and prompt.get("input_modality") == ["image"]:
+        warnings.warn(
+            "The paper prompts use image frames. Native video is a different experimental "
+            "setting; the image-worded prompt is sent unchanged. Report media=video separately.",
+            UserWarning, stacklevel=2,
+        )
     rows_by_id = index_rows(references)
     inputs = []
     for clip_id in rows_by_id:

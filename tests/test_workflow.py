@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 import json
 
 import pytest
@@ -10,6 +11,12 @@ from nora import download_media, predict, reconstruct
 
 def annotation(key="x"):
     return {"clip_id": key, "facts": [], "reasons": [], "actions": []}
+
+
+def extraction():
+    return {"clip_id": "x", "facts": [], "actions": [
+        {"action_id": "A1", "description": "I wait.", "reasons": []}],
+        "chosen_action_id": "A1"}
 
 
 def save(path, rows):
@@ -73,9 +80,11 @@ def test_predict_cli_passes_selected_media(tmp_path, monkeypatch, media):
         return "I wait."
     monkeypatch.setattr("nora.models.ChatCompletionsModel", lambda **kwargs: model)
     output = tmp_path / "raw.jsonl"
-    assert main(["predict", "--references", str(refs), "--media-root", str(tmp_path / "media"),
-                 "--media", media, "--model", "fake", "--base-url", "http://localhost:1/v1",
-                 "--output", str(output)]) == 0
+    warning = pytest.warns(UserWarning, match="different experimental setting") if media == "video" else nullcontext()
+    with warning:
+        assert main(["predict", "--references", str(refs), "--media-root", str(tmp_path / "media"),
+                     "--media", media, "--model", "fake", "--base-url", "http://localhost:1/v1",
+                     "--output", str(output)]) == 0
     assert read_rows(output)[0]["media"] == media
 
 
@@ -84,7 +93,7 @@ def test_reconstruction_cli_uses_users_api_key(tmp_path, monkeypatch):
     def complete(self, instructions, content):
         assert self.key == "test-only-api-key"
         assert self.model == "user-selected-model"
-        return json.dumps(annotation())
+        return json.dumps(extraction())
     monkeypatch.setenv("OPENAI_API_KEY", "test-only-api-key")
     monkeypatch.setattr(ResponsesClient, "__call__", complete)
     raw = save(tmp_path / "raw.jsonl", [{"clip_id": "x", "response": "I wait."}])
@@ -142,15 +151,16 @@ def test_valid_subsets_still_succeed(tmp_path, monkeypatch, capsys, include_fail
 def test_failed_reconstruction_is_separate_and_inspectable(tmp_path):
     raw = save(tmp_path / "raw.jsonl", [{"clip_id": "x", "response": "I wait.", "media": "video"}])
     output = tmp_path / "pred.jsonl"
-    candidate = {**annotation(), "actions": [{"action_id": "A1", "description": "I wait.",
-                 "reasons_to_do": [{"reason_id": "missing"}]}]}
+    candidate = extraction()
+    candidate["actions"][0]["reasons"] = [
+        {"text": "I can avoid bumping into them.", "facts": ["missing"], "stance": "support"}]
     result = reconstruct(raw, output=output, model="fake", client=lambda *a: json.dumps(candidate))
     record = read_rows(output)[0]
     assert record["status"] == "failed" and "prediction" not in record
     assert record["media"] == "video"
     audit = read_rows(result["failures_path"])[0]
     assert audit["candidate"] == candidate
-    assert audit["stage"] == "validation" and audit["error_code"] == "dangling_reason_ref"
+    assert audit["stage"] == "conversion" and audit["error_code"] == "dangling_fact_ref"
 
 
 @pytest.mark.parametrize("text", ["not json", '{"x": NaN}', "null"])
@@ -177,7 +187,7 @@ def test_request_failure_never_saves_exception_body(tmp_path):
 def test_missing_response_does_not_block_valid_rows(tmp_path):
     raw = save(tmp_path / "raw.jsonl", [{"clip_id": "bad"}, {"clip_id": "x", "response": "I wait."}])
     result = reconstruct(raw, output=tmp_path / "pred.jsonl", model="fake",
-                         client=lambda *a: json.dumps(annotation()))
+                         client=lambda *a: json.dumps(extraction()))
     assert [row["status"] for row in read_rows(result["output"])] == ["failed", "ok"]
     assert read_rows(result["failures_path"])[0]["error_code"] == "missing_response"
 

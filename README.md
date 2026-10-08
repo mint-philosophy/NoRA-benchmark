@@ -81,6 +81,10 @@ Native thinking is not enabled or disabled by the runner; configure and record
 it in your endpoint or [Python callback](docs/models.md#model-callbacks).
 The prompt mode and native thinking mode are separate settings.
 
+The paper uses pre-action frame montages. `--media video` is an optional,
+different experimental setting: the runner warns and sends the original
+image-worded prompt unchanged. Report video results separately.
+
 Responses are saved after each clip with the model, prompt, and modality labels.
 Use a different output path for each model and prompt; existing files are not
 overwritten. Failed or truncated responses are recorded as failures.

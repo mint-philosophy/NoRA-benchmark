@@ -51,6 +51,7 @@ def test_original_paper_prompts_are_bundled():
         "deliberate": ["Action analyses", "Chosen action"],
         "structured": ["Facts", "Available actions", "Chosen action"],
     }
+    assert all(row["input_modality"] == ["image"] for row in prompts.values())
     assert "Do not include facts" in prompts["direct"]["user_task_template"]
     assert "2 to 4 plausible next actions" in prompts["deliberate"]["system_prompt"]
     assert "Do not use fact ids" in prompts["deliberate"]["user_task_template"]
@@ -72,7 +73,9 @@ def test_reconstruction_uses_same_annotation_path(tmp_path):
     def client(instructions, content):
         assert set(json.loads(content)) == {"clip_id", "response"}
         assert "secret_gold" not in instructions + content
-        return json.dumps(prediction)
+        return json.dumps({"clip_id": "x", "facts": [], "actions": [
+            {"action_id": "A1", "description": "I wait.", "reasons": []},
+            {"action_id": "A2", "description": "I step aside.", "reasons": []}]})
     output = tmp_path / "annotations.jsonl"
     assert reconstruct(path, output=output, model="fake", client=client)["invalid"] == 0
     saved = read_rows(output)[0]
@@ -83,19 +86,20 @@ def test_reconstruction_uses_same_annotation_path(tmp_path):
         reconstruct(path, output=output, model="fake", client=client)
 
 
-@pytest.mark.parametrize("prediction", [
-    {"clip_id": "wrong", "facts": [], "reasons": [], "actions": []},
-    {"clip_id": "x", "facts": [], "reasons": [], "actions": [], "chosen_action_id": "A1"},
-    {"clip_id": "x", "facts": [], "reasons": [], "actions": [{
-        "action_id": "A1", "description": "I wait.", "reasons_to_do": [{"reason_id": "missing"}]}]},
-    {"clip_id": "x", "facts": [], "reasons": [], "actions": [{
-        "action_id": "A1", "description": "I wait.", "reasons_to_do": [], "reasons_not_to_do": []}]},
+@pytest.mark.parametrize("extraction", [
+    {"clip_id": "wrong", "facts": [], "actions": []},
+    {"clip_id": "x", "facts": [], "actions": [], "chosen_action_id": "A1"},
+    {"clip_id": "x", "facts": [], "actions": [{
+        "action_id": "A1", "description": "I wait.", "reasons": [{
+            "text": "I can let them pass.", "facts": ["missing"], "stance": "support"}]}]},
+    {"clip_id": "x", "facts": [], "actions": [{
+        "action_id": "A1", "description": "I wait.", "reasons": [], "reasons_not_to_do": []}]},
 ])
-def test_reconstruction_does_not_repair_invalid_annotations(tmp_path, prediction):
+def test_reconstruction_does_not_repair_invalid_extractions(tmp_path, extraction):
     path = tmp_path / "raw.jsonl"
     path.write_text('{"clip_id":"x","response":"I wait."}\n')
     output = tmp_path / "pred.jsonl"
-    result = reconstruct(path, output=output, model="fake", client=lambda *a: json.dumps(prediction))
+    result = reconstruct(path, output=output, model="fake", client=lambda *a: json.dumps(extraction))
     assert result["invalid"] == 1
     assert read_rows(output)[0]["status"] == "failed"
     assert "prediction" not in read_rows(output)[0]

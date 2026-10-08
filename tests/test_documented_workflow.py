@@ -61,7 +61,8 @@ def test_documented_pipeline(tmp_path, monkeypatch, capsys, mode):
 
     def extract(self, instructions, content):
         assert json.loads(content) == {"clip_id": "example", "response": "I wait."}
-        return json.dumps(expected)
+        return json.dumps({"clip_id": "example", "facts": [], "actions": [
+            {"action_id": "A1", "description": "I wait.", "reasons": []}]})
 
     monkeypatch.setattr("nora.models.ChatCompletionsModel", make_model)
     monkeypatch.setenv("OPENAI_API_KEY", "test-only-key")

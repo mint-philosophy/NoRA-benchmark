@@ -44,7 +44,8 @@ def build_parser():
     pred = commands.add_parser("predict", help="Generate model responses from frames or video; API fees may apply.")
     pred.add_argument("--references", help="Local JSONL; defaults to bundled test annotations.")
     pred.add_argument("--media-root", required=True, help="Directory produced by nora download-media.")
-    pred.add_argument("--media", choices=["frames", "video"], default="frames")
+    pred.add_argument("--media", choices=["frames", "video"], default="frames",
+                      help="Paper setting: frames. Native video is a separate experimental setting.")
     pred.add_argument("--model", required=True)
     pred.add_argument("--base-url", required=True, help="Compatible endpoint ending in /v1.")
     pred.add_argument("--api-key-env", default="NORA_API_KEY")

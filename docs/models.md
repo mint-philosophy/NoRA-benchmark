@@ -81,6 +81,10 @@ in the same layout without using the downloader.
 Use the same `--media` selection when predicting. The runner checks every path
 before inference and records the selected modality in each output row. Frame
 and video inputs are different experimental settings; report which you used.
+The paper uses frame montages. With the image-only paper prompts, native video
+emits a warning and sends the original prompt unchanged; it is not a reproduction
+of the paper setting. Use a custom prompt dictionary in Python if you want to
+adapt the wording for video, and record that prompt as a separate experiment.
 
 ## Python interface
 
@@ -127,7 +131,7 @@ prompt = next(p for p in load_prompts() if p["mode"] == "structured")
 predict(
     load_references(), my_model,
     media_root="data/media",
-    media="frames",  # or "video"
+    media="frames",  # Paper setting; native video is a separate experiment.
     prompt=prompt,
     output="runs/custom.jsonl",
     model_id="my-model",
@@ -200,11 +204,19 @@ uv run --extra scorer nora evaluate --predictions runs/annotations.jsonl \
   --output runs/scores
 ```
 
-The structured prompt restarts reason IDs within each action and allows
-`Reasons to do` or `Reasons not to do`. Reconstruction assigns unique IDs,
-preserves candidate actions, and extracts only explicit supporting reasons;
-objections are not converted into support. The scoring schema is therefore
-different from the raw response format.
+Reconstruction has two steps: an LLM extracts facts and action-local reasons;
+Python builds the public annotation. This keeps repeated local labels such as
+`A1/R1` and `A2/R1` separate and assigns unique reason IDs. Explicit foundations
+are mapped to the public tags, including `coordination / proactivity` to
+`Coordination` and `communication / legibility` to `Communication`. Other
+explicit foundations map to `Other`; missing foundations remain untagged.
+
+Opposing reasons never become supporting links. All final candidate actions
+remain, even those with only objections or no support, and an explicit chosen
+action must resolve to a retained action. Direct answers do not acquire invented
+facts or reasons. Deliberate answers may express fact-reason links in prose,
+without numbered references. The scoring schema differs from the raw response
+and intermediate extraction formats.
 
 Reconstruction uses only the model's response, not reference annotations.
 It records the extractor model and prompt in a receipt beside the output.
@@ -220,8 +232,8 @@ Reconstruction saves three files:
 | `annotations.jsonl.receipt.json` | Reconstruction model, prompt, and input/output record. |
 
 Evaluate only `annotations.jsonl`; the failure file is for inspection, not scoring.
-For example, `stage: validation` with `error_code: dangling_reason_ref` means
-the extractor cited a reason ID that does not exist. Request failures have no
+For example, `stage: conversion` with `error_code: dangling_fact_ref` means
+the extractor cited a fact ID that does not exist. Request failures have no
 candidate unless one was received, and provider exception bodies are not saved.
 
 Keep raw responses and inspect reconstructed annotations: an LLM may omit or invent
