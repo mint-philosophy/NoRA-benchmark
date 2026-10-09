@@ -23,7 +23,7 @@ If you already have predictions, skip to [scoring](#4-score-predictions).
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/Sichao-Li/NoRA-benchmark.git
+git clone https://github.com/mint-philosophy/NoRA-benchmark.git
 cd NoRA-benchmark
 uv sync --locked
 uv run nora demo
@@ -159,7 +159,8 @@ For issues or contributions, see [Contributing](CONTRIBUTING.md).
 
 ## Citation and license
 
-Please cite the [NoRA paper](https://arxiv.org/abs/2606.04806);
+Please cite the [NoRA paper](https://arxiv.org/abs/2606.04806),
+accepted to the NeurIPS 2026 Evaluations and Datasets Track;
 citation metadata is in [CITATION.cff](CITATION.cff).
 
 Code is licensed under [MIT](LICENSE). Dataset annotations are

@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.repository == 'Sichao-Li/NoRA-benchmark'
+    if: github.repository == 'mint-philosophy/NoRA-benchmark'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

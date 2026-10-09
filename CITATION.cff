@@ -3,7 +3,7 @@ message: "If you use this software, please cite the NoRA paper below."
 title: "NoRA benchmark evaluation software"
 type: software
 version: "0.4.0"
-repository-code: "https://github.com/Sichao-Li/NoRA-benchmark"
+repository-code: "https://github.com/mint-philosophy/NoRA-benchmark"
 license: MIT
 authors: &authors
   - family-names: Li
@@ -19,9 +19,10 @@ authors: &authors
   - family-names: Lazar
     given-names: Seth
 preferred-citation:
-  type: article
+  type: conference-paper
   title: "NoRA: Evaluating Grounded Reasonableness in Visual First-person Normative Action Reasoning"
   authors: *authors
   year: 2026
-  doi: "10.48550/arXiv.2606.04806"
+  collection-title: "Advances in Neural Information Processing Systems"
+  notes: "Accepted to the NeurIPS 2026 Evaluations and Datasets Track."
   url: "https://arxiv.org/abs/2606.04806"

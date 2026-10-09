@@ -1,7 +1,7 @@
 # Contributing
 
 Report bugs or suggest improvements through
-[GitHub Issues](https://github.com/Sichao-Li/NoRA-benchmark/issues).
+[GitHub Issues](https://github.com/mint-philosophy/NoRA-benchmark/issues).
 Include the command, package version, and a small reproducible example.
 Remove API keys and private model responses from any shared logs.
 
