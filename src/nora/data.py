@@ -8,11 +8,7 @@ import json
 from pathlib import Path
 
 DATASET_ID = "MINTLABJHUANU/NoRA"
-DATASET_REVISION = "7c393be5645e2f9d4bb8b9c13e25e095bfcff77f"
-DATA_HASHES = {
-    "train": "e9af9cb8f203adcf3b2f5b9ccdfc4e4e0194978e4e45b666d10f23fd9485b876",
-    "test": "d8ed78b40c38645af5f83634cab8093a1d47699b8f5e6a1e6d39177a25137b68",
-}
+SPLITS = ("train", "test")
 
 
 def digest(path):
@@ -62,19 +58,15 @@ def index_rows(rows):
 
 
 def reference_path(split="test", *, offline=False):
-    if split not in DATA_HASHES:
+    if split not in SPLITS:
         raise ValueError("split must be train or test")
     if split == "test":
-        path = Path(str(files("nora") / "assets/nora_test.jsonl"))
-    else:
-        from huggingface_hub import hf_hub_download
-        path = Path(hf_hub_download(
-            DATASET_ID, "data/nora_train.jsonl", repo_type="dataset",
-            revision=DATASET_REVISION, local_files_only=offline,
-        ))
-    if digest(path) != DATA_HASHES[split]:
-        raise ValueError("dataset_checksum_mismatch")
-    return path
+        return Path(str(files("nora") / "assets/nora_test.jsonl"))
+    from huggingface_hub import hf_hub_download
+    return Path(hf_hub_download(
+        DATASET_ID, "data/nora_train.jsonl", repo_type="dataset",
+        local_files_only=offline,
+    ))
 
 
 def load_references(split="test", *, offline=False):
